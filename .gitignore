@@ -1,0 +1,105 @@
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+crypto_ticks_to_db
+crypto_exchange_producer
+rabbitmq_test_publisher
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+env_for_docker.local
+*.env.backup
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Data directories
+data/
+*.db
+*.sqlite
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE specific files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Debug files
+debug/
+*.pprof
+
+# Docker
+.dockerignore.local
+
+# Archive files
+archive/
+*.tar.gz
+*.zip
+
+# Test output
+test_output/
+*_test_output.log
+*_output.log
+
+# Build artifacts
+build/
+dist/
+
+# Coverage reports
+coverage/
+*.coverprofile
+
+# Node modules (if any frontend exists)
+node_modules/
+
+# Python (if any scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# System files
+Thumbs.db
+.directory
+
+# Backup files
+*.backup
+backup/
+
+# Local configuration overrides
+*.local
+config.local.yaml
+config.local.json

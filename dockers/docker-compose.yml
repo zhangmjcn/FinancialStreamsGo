@@ -1,0 +1,127 @@
+version: '3.8'
+
+# Main Docker Compose configuration for FinancialStreamsJ
+# Optimized for crypto_ticks_to_db scenario with RabbitMQ and ClickHouse
+
+services:
+  # RabbitMQ Message Broker
+  financial-rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: financial-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI port (http://localhost:15672)
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_DEFAULT_VHOST: financial
+      # Enable management plugin
+      RABBITMQ_PLUGINS: rabbitmq_management
+      # Proxy configuration for network issues
+      http_proxy: ${HTTP_PROXY:-}
+      https_proxy: ${HTTPS_PROXY:-}
+      no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
+    volumes:
+      # Persistent data storage - maps to project data directory
+      - ../data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - financial-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ClickHouse Analytics Database
+  financial-clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: financial-clickhouse
+    restart: unless-stopped
+    ports:
+      - "9000:9000"    # Native TCP port
+      - "8123:8123"    # HTTP interface port
+    environment:
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: admin123
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      # Proxy configuration for network issues
+      http_proxy: ${HTTP_PROXY:-}
+      https_proxy: ${HTTPS_PROXY:-}
+      no_proxy: ${NO_PROXY:-localhost,127.0.0.1}
+    volumes:
+      # Persistent data storage - maps to project data directory structure
+      - ../data/clickhouse/data:/var/lib/clickhouse
+      - ../data/clickhouse/logs:/var/log/clickhouse-server
+      # Optional custom configuration
+      - ../project/scenarios/crypto_ticks_to_db/config/clickhouse-config.xml:/etc/clickhouse-server/config.xml:ro
+    networks:
+      - financial-network
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Main Application (optional - can be run separately)
+  # financial-streams:
+  #   build:
+  #     context: ../
+  #     dockerfile: docker/Dockerfile
+  #   container_name: financial-streams
+  #   restart: unless-stopped
+  #   depends_on:
+  #     financial-rabbitmq:
+  #       condition: service_healthy
+  #     financial-clickhouse:
+  #       condition: service_healthy
+  #   environment:
+  #     ENV: production
+  #     LOG_LEVEL: info
+  #     RABBITMQ_URL: amqp://admin:admin123@financial-rabbitmq:5672/financial
+  #     CLICKHOUSE_URL: http://financial-clickhouse:8123
+  #   volumes:
+  #     - ../data:/data
+  #     - ../logs:/logs
+  #   networks:
+  #     - financial-network
+
+networks:
+  financial-network:
+    driver: bridge
+    name: financial-network
+    # Network configuration for proxy support
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+
+# Explicitly defined volumes for better management
+volumes:
+  rabbitmq-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/../data/rabbitmq
+      o: bind
+  clickhouse-data:
+    driver: local  
+    driver_opts:
+      type: none
+      device: ${PWD}/../data/clickhouse/data
+      o: bind
+  clickhouse-logs:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/../data/clickhouse/logs
+      o: bind

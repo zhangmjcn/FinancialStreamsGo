@@ -1,0 +1,140 @@
+version: '3.8'
+
+# FinancialStreamsJ Docker Compose 配置
+# 使用 env_for_docker 文件作为环境变量配置
+# 启动命令: docker-compose --env-file env_for_docker up -d
+
+services:
+  # RabbitMQ 消息队列服务
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: fs-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP 端口
+      - "15672:15672"  # 管理界面端口
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - financial-streams-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ClickHouse 高性能分析数据库
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: fs-clickhouse
+    restart: unless-stopped
+    ports:
+      - "9001:9000"    # Native TCP 端口 (映射到主机 9001)
+      - "8123:8123"    # HTTP 接口端口
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE}
+    volumes:
+      - ./data/clickhouse/data:/var/lib/clickhouse
+      - ./data/clickhouse/logs:/var/log/clickhouse-server
+    networks:
+      - financial-streams-network
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    deploy:
+      resources:
+        limits:
+          memory: ${CLICKHOUSE_MEM_LIMIT:-4G}
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--user", "${CLICKHOUSE_USER}", "--password", "${CLICKHOUSE_PASSWORD}", "--query", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Crypto Ticks 数据处理服务
+  crypto-ticks-processor:
+    build:
+      context: ./project/scenarios/crypto_ticks_to_db
+      dockerfile: deployment/docker/Dockerfile.production
+    image: crypto-ticks-to-db:latest
+    container_name: fs-crypto-processor
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    environment:
+      # 环境设置
+      ENV: ${ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # RabbitMQ 连接配置 (使用 Docker 内部网络)
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+      RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY}
+      RABBITMQ_PREFETCH_COUNT: ${RABBITMQ_PREFETCH_COUNT}
+      
+      # ClickHouse 连接配置 (使用 Docker 内部网络)
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 9000
+      CLICKHOUSE_HTTP_PORT: 8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
+      
+      # 应用配置
+      BATCH_SIZE: ${BATCH_SIZE:-5000}
+      BATCH_TIMEOUT: ${BATCH_TIMEOUT:-30s}
+      WORKER_COUNT: ${WORKER_COUNT:-5}
+      BUFFER_SIZE: ${BUFFER_SIZE:-10000}
+      RETRY_ATTEMPTS: ${RETRY_ATTEMPTS:-3}
+      RETRY_DELAY: ${RETRY_DELAY:-5s}
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+      METRICS_INTERVAL: ${METRICS_INTERVAL:-30s}
+    volumes:
+      - ./logs/crypto-processor:/app/logs
+      - ./project/scenarios/crypto_ticks_to_db/config:/app/config:ro
+    networks:
+      - financial-streams-network
+    deploy:
+      resources:
+        limits:
+          memory: ${APP_MEM_LIMIT:-1G}
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+
+networks:
+  financial-streams-network:
+    driver: bridge
+    name: financial-streams-network
+
+# 命名卷，用于数据持久化
+volumes:
+  rabbitmq-data:
+    driver: local
+  clickhouse-data:
+    driver: local
+  clickhouse-logs:
+    driver: local

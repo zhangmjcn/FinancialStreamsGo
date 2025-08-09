@@ -1,0 +1,76 @@
+# FinancialStreams v2.0 环境配置模板
+# 复制此文件为 .env 并填写相应的值
+
+# ============================================
+# RabbitMQ 统一配置
+# ============================================
+RABBITMQ_DEFAULT_USER=admin
+RABBITMQ_DEFAULT_PASS=password
+
+# RabbitMQ 连接配置 (所有服务使用统一配置)
+RABBITMQ_URL=amqp://admin:password@localhost:5672/
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USER=admin
+RABBITMQ_PASSWORD=password
+RABBITMQ_VHOST=/
+RABBITMQ_EXCHANGE=crypto.ticks
+RABBITMQ_ROUTING_KEY=*.USDT
+RABBITMQ_PREFETCH_COUNT=100
+
+# ============================================
+# InfluxDB 配置 (已停用，使用ClickHouse)
+# ============================================
+# DOCKER_INFLUXDB_INIT_USERNAME=admin
+# DOCKER_INFLUXDB_INIT_PASSWORD=password
+# DOCKER_INFLUXDB_INIT_ORG=financial_streams
+# DOCKER_INFLUXDB_INIT_BUCKET=tick_data
+
+# InfluxDB 管理员Token (必须设置，请生成新的token)
+# 生成方式: openssl rand -hex 32
+# DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=4bhgE_BOQw_1VaQByJReE7f17arwZbjPh_SyMjqjNibpBvAyHDIGGAGQr9nXy5EMpZNjUvDM5ZbQzTxRcE8D1g==
+
+# InfluxDB 性能配置
+# INFLUXD_STORAGE_CACHE_MAX_MEMORY_SIZE=2147483648
+# INFLUXD_STORAGE_WAL_FSYNC_DELAY=100ms
+# INFLUXD_HTTP_WRITE_TIMEOUT=0
+# INFLUXD_STORAGE_WRITE_TIMEOUT=40s
+
+# ============================================
+# ClickHouse 统一配置
+# ============================================
+# ClickHouse 认证配置
+CLICKHOUSE_USER=admin
+CLICKHOUSE_PASSWORD=password
+
+# ClickHouse 数据库配置
+CLICKHOUSE_DATABASE=financial_streams
+
+# ClickHouse 连接配置
+CLICKHOUSE_URL=http://localhost:8123
+CLICKHOUSE_HOST=localhost
+CLICKHOUSE_HTTP_PORT=8123
+CLICKHOUSE_PORT=9001
+
+# ClickHouse 性能配置
+CLICKHOUSE_MAX_MEMORY_USAGE=10000000000
+CLICKHOUSE_MAX_EXECUTION_TIME=300
+
+# ============================================
+# 应用配置
+# ============================================
+ENVIRONMENT=production
+LOG_LEVEL=info
+
+# Python 路径
+PYTHONPATH=/app
+PYTHONUNBUFFERED=1
+
+# ============================================
+# Docker 配置
+# ============================================
+COMPOSE_PROJECT_NAME=financial-streams
+COMPOSE_FILE=docker/docker-compose.yml
+
+# 时区配置
+TZ=Asia/Shanghai

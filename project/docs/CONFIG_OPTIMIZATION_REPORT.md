@@ -40,11 +40,11 @@
 
 **RabbitMQ统一配置**：
 ```bash
-RABBITMQ_URL=amqp://admin:admin123@localhost:5672/
+RABBITMQ_URL=amqp://admin:your_password@localhost:5672/
 RABBITMQ_HOST=localhost
 RABBITMQ_PORT=5672
 RABBITMQ_USER=admin
-RABBITMQ_PASSWORD=admin123
+RABBITMQ_PASSWORD=your_password
 RABBITMQ_EXCHANGE=crypto.ticks
 RABBITMQ_ROUTING_KEY=*.USDT
 ```
@@ -56,7 +56,7 @@ CLICKHOUSE_HOST=localhost
 CLICKHOUSE_HTTP_PORT=8123
 CLICKHOUSE_PORT=9000
 CLICKHOUSE_USER=admin
-CLICKHOUSE_PASSWORD=admin123
+CLICKHOUSE_PASSWORD=your_password
 CLICKHOUSE_DATABASE=crypto_ticks
 ```
 
@@ -97,7 +97,7 @@ CLICKHOUSE_DATABASE=crypto_ticks
 
 === 配置验证结果 ===
 数据源类型: rabbitmq
-RabbitMQ URL: amqp://admin:admin123@localhost:5672/
+RabbitMQ URL: amqp://admin:your_password@localhost:5672/
 ClickHouse Database: crypto_ticks
 ClickHouse Username: admin
 管道配置批次大小: 5000

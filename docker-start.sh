@@ -33,8 +33,8 @@ check_dependencies() {
         exit 1
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose 未安装"
+    if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; then
+        print_error "Docker Compose 未安装或不支持"
         exit 1
     fi
     
@@ -56,31 +56,31 @@ check_config() {
 # 停止现有服务
 stop_services() {
     print_info "停止现有服务..."
-    docker-compose --env-file env_for_docker down || true
+    docker compose --env-file env_for_docker down || true
 }
 
 # 构建镜像
 build_images() {
     print_info "构建 Docker 镜像..."
-    docker-compose --env-file env_for_docker build
+    docker compose --env-file env_for_docker build
 }
 
 # 启动服务
 start_services() {
     print_info "启动服务..."
-    docker-compose --env-file env_for_docker up -d
+    docker compose --env-file env_for_docker up -d
     
     print_info "等待服务健康检查..."
     sleep 10
     
     # 检查服务状态
-    docker-compose --env-file env_for_docker ps
+    docker compose --env-file env_for_docker ps
 }
 
 # 显示日志
 show_logs() {
     print_info "显示最近的日志..."
-    docker-compose --env-file env_for_docker logs --tail=20
+    docker compose --env-file env_for_docker logs --tail=20
 }
 
 # 主函数

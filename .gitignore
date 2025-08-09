@@ -21,10 +21,17 @@ go.work.sum
 # Dependency directories
 vendor/
 
-# Environment files
+# Go environment (built-in Go installation is too large for repo)
+golang/
+
+# Go module cache
+pkg/mod/
+
+# Environment files (contains sensitive credentials)
 .env
 .env.local
 .env.*.local
+env_for_docker
 env_for_docker.local
 *.env.backup
 
